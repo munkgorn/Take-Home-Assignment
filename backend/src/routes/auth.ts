@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
-import { registerSchema, loginSchema } from '../validators/auth';
+import { registerSchema, loginSchema, changePasswordSchema } from '../validators/auth';
+import { authMiddleware } from '../middleware/auth';
 import { securityLogger } from '../middleware/logger';
 
 function getClientIp(req: Request): string {
@@ -67,6 +68,34 @@ export function createAuthRoutes(prisma: PrismaClient) {
 
       securityLogger.loginSuccess(data.email, ip);
       res.json({ id: user.id, email: user.email, name: user.name });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/change-password', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = changePasswordSchema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      const valid = await bcrypt.compare(data.currentPassword, user.password);
+      if (!valid) {
+        res.status(401).json({ message: 'Current password is incorrect' });
+        return;
+      }
+
+      const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      });
+
+      res.json({ message: 'Password changed successfully' });
     } catch (err) {
       next(err);
     }

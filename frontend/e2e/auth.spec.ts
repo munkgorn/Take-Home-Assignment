@@ -110,4 +110,42 @@ test.describe('Authentication', () => {
     await page.getByRole('link', { name: /sign in/i }).click();
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test('profile page displays user info', async ({ page }) => {
+    await login(page);
+    await page.goto('/profile');
+    await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
+    await expect(page.getByText('Account Information')).toBeVisible();
+    await expect(page.getByTestId('profile-name')).toHaveText(TEST_USER.name);
+    await expect(page.getByTestId('profile-email')).toHaveText(TEST_USER.email);
+  });
+
+  test('navigate to profile from header link', async ({ page }) => {
+    await login(page);
+    await expect(page).toHaveURL('/');
+    await page.getByRole('link', { name: TEST_USER.name }).click();
+    await expect(page).toHaveURL('/profile');
+  });
+
+  test('change password with wrong current password shows error', async ({ page }) => {
+    await login(page);
+    await page.goto('/profile');
+    await page.getByLabel('Current Password').fill('wrongpassword');
+    await page.getByLabel('New Password', { exact: true }).fill('newpassword123');
+    await page.getByLabel('Confirm New Password').fill('newpassword123');
+    await page.getByRole('button', { name: /change password/i }).click();
+    await expect(page.getByText(/current password is incorrect/i)).toBeVisible({ timeout: 10000 });
+  });
+
+  test('change password successfully', async ({ page }) => {
+    const user = await registerUser(page);
+    await page.waitForURL('/', { timeout: 15000 });
+
+    await page.goto('/profile');
+    await page.getByLabel('Current Password').fill(user.password);
+    await page.getByLabel('New Password', { exact: true }).fill('newpassword456');
+    await page.getByLabel('Confirm New Password').fill('newpassword456');
+    await page.getByRole('button', { name: /change password/i }).click();
+    await expect(page.getByText(/password changed successfully/i)).toBeVisible({ timeout: 10000 });
+  });
 });

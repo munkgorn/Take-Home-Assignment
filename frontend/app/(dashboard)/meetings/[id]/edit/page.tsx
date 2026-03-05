@@ -7,6 +7,7 @@ import { getMeeting, updateMeeting } from "@/lib/api";
 import { Meeting } from "@/types";
 import { MeetingForm } from "@/components/meeting-form";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function EditMeetingPage() {
   const params = useParams();
@@ -52,11 +53,16 @@ export default function EditMeetingPage() {
       <div className="space-y-6">
         <div className="h-4 w-48 animate-pulse rounded bg-muted" />
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="mx-auto max-w-2xl space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
-          ))}
-        </div>
+        <Card className="mx-auto max-w-2xl animate-pulse">
+          <CardHeader>
+            <div className="h-6 w-3/4 rounded bg-muted" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-10 rounded bg-muted" />
+            ))}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -72,13 +78,18 @@ export default function EditMeetingPage() {
         ]}
       />
       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Edit Meeting</h2>
-      <div className="mx-auto max-w-2xl">
-        <MeetingForm
-          initialData={meeting}
-          onSubmit={onSubmit}
-          isLoading={isSubmitting}
-        />
-      </div>
+      <Card className="mx-auto max-w-2xl">
+        <CardHeader>
+          <CardTitle>Meeting Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MeetingForm
+            initialData={meeting}
+            onSubmit={onSubmit}
+            isLoading={isSubmitting}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

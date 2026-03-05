@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,9 +18,12 @@ export default function DashboardLayout({
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <h1 className="text-xl font-semibold">Meeting Scheduler</h1>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden sm:inline text-sm text-muted-foreground truncate max-w-[200px]">
+            <Link
+              href="/profile"
+              className="hidden sm:inline text-sm text-muted-foreground truncate max-w-[200px] hover:text-foreground transition-colors"
+            >
               {session?.user?.name || session?.user?.email}
-            </span>
+            </Link>
             <Separator orientation="vertical" className="hidden sm:block h-6" />
             <Button
               variant="ghost"
