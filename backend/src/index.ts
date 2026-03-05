@@ -48,6 +48,7 @@ app.use(express.json({ limit: '1mb' }));
 // Log every request
 app.use(requestLogger);
 
+app.get('/api/health', (_req, res) => { res.json({ status: 'ok' }); });
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/meetings', meetingRoutes);
