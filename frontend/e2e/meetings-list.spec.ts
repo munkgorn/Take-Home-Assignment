@@ -1,0 +1,208 @@
+import { test, expect } from '@playwright/test';
+import { login, fillMeetingBasicFields, pickDate } from './helpers';
+
+test.describe('Meetings list - search, filter, and pagination', () => {
+  // Seed data identifiers
+  const prefix = `List${Date.now()}`;
+  const meetings = [
+    { title: `${prefix} Alpha Interview`, candidate: 'Alice Johnson', position: 'Designer', status: 'pending' },
+    { title: `${prefix} Beta Review`, candidate: 'Bob Williams', position: 'Developer', status: 'confirmed' },
+    { title: `${prefix} Gamma Screening`, candidate: 'Charlie Brown', position: 'Analyst', status: 'cancelled' },
+  ];
+
+  test.beforeAll(async ({ browser }) => {
+    // Seed meetings for this test suite by creating them via the UI
+    const page = await browser.newPage();
+    await login(page);
+
+    for (const m of meetings) {
+      await page.goto('/meetings/new');
+      await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+
+      await fillMeetingBasicFields(page, {
+        title: m.title,
+        candidateName: m.candidate,
+        position: m.position,
+        meetingType: 'onsite',
+        startTime: '10:00',
+        endTime: '11:00',
+      });
+
+      await pickDate(page, 'Start Date', 15);
+      await pickDate(page, 'End Date', 15);
+
+      await page.getByRole('button', { name: /create meeting/i }).click();
+      await page.waitForURL('/', { timeout: 15000 });
+      await expect(page.getByText(/meeting created successfully/i)).toBeVisible({ timeout: 10000 });
+    }
+
+    // Now update statuses for the non-pending meetings via their edit pages
+    for (const m of meetings) {
+      if (m.status === 'pending') continue;
+
+      await page.goto('/');
+      await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
+
+      // Navigate to the meeting card, then edit
+      const card = page.locator('[class*="card"]', { hasText: m.title }).first();
+      await card.click();
+      await page.waitForURL(/\/meetings\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
+      await page.getByRole('link', { name: /edit/i }).click();
+      await page.waitForURL(/\/edit$/, { timeout: 10000 });
+
+      // Change status
+      const statusSection = page.locator('form').locator('text=Status').locator('..');
+      await statusSection.getByRole('combobox').click();
+      const statusLabel = m.status.charAt(0).toUpperCase() + m.status.slice(1);
+      await page.getByRole('option', { name: new RegExp(statusLabel, 'i') }).click();
+
+      await page.getByRole('button', { name: /update meeting/i }).click();
+      await page.waitForURL(/\/meetings\/[a-zA-Z0-9-]+$/, { timeout: 15000 });
+      await expect(page.getByText(/meeting updated successfully/i)).toBeVisible({ timeout: 10000 });
+    }
+
+    await page.close();
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('dashboard displays meetings list', async ({ page }) => {
+    await expect(page.getByText('My Meetings')).toBeVisible();
+    // At least the seeded meetings should be visible
+    for (const m of meetings) {
+      await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
+    }
+  });
+
+  test('search by candidate name filters meetings', async ({ page }) => {
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill('Alice Johnson');
+
+    // Wait for the filtered results to load
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
+
+    // Other meetings should not be visible
+    await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[2].title)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('search by title filters meetings', async ({ page }) => {
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill('Beta Review');
+
+    await expect(page.getByText(meetings[1].title)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(meetings[0].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[2].title)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('clear search shows all meetings again', async ({ page }) => {
+    const searchInput = page.getByPlaceholder('Search meetings...');
+
+    // First search to filter
+    await searchInput.fill('Alice Johnson');
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
+
+    // Clear the search
+    await searchInput.clear();
+
+    // All meetings should be visible again
+    for (const m of meetings) {
+      await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
+    }
+  });
+
+  test('filter by pending status', async ({ page }) => {
+    // Open the status filter select (shadcn/Radix Select)
+    await page.getByRole('combobox', { name: /filter/i }).or(
+      page.locator('button', { hasText: /all statuses/i })
+    ).click();
+    await page.getByRole('option', { name: /pending/i }).click();
+
+    // The pending meeting should be visible
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
+
+    // The confirmed and cancelled meetings should not appear
+    await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[2].title)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('filter by confirmed status', async ({ page }) => {
+    await page.getByRole('combobox', { name: /filter/i }).or(
+      page.locator('button', { hasText: /all statuses/i })
+    ).click();
+    await page.getByRole('option', { name: /confirmed/i }).click();
+
+    await expect(page.getByText(meetings[1].title)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(meetings[0].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[2].title)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('filter by cancelled status', async ({ page }) => {
+    await page.getByRole('combobox', { name: /filter/i }).or(
+      page.locator('button', { hasText: /all statuses/i })
+    ).click();
+    await page.getByRole('option', { name: /cancelled/i }).click();
+
+    await expect(page.getByText(meetings[2].title)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(meetings[0].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('reset status filter to all shows all meetings', async ({ page }) => {
+    // First apply a filter
+    await page.getByRole('combobox', { name: /filter/i }).or(
+      page.locator('button', { hasText: /all statuses/i })
+    ).click();
+    await page.getByRole('option', { name: /pending/i }).click();
+
+    // Verify filtered
+    await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
+
+    // Reset to "All Statuses"
+    await page.getByRole('combobox').first().click();
+    await page.getByRole('option', { name: /all statuses/i }).click();
+
+    // All meetings should be visible again
+    for (const m of meetings) {
+      await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
+    }
+  });
+
+  test('new meeting button navigates to create page', async ({ page }) => {
+    await page.getByRole('link', { name: /new meeting/i }).click();
+    await expect(page).toHaveURL(/\/meetings\/new/);
+    await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+  });
+
+  test('meeting cards show expected information', async ({ page }) => {
+    // Verify the first meeting card shows title, candidate name, position, status badge
+    const card = page.locator('[class*="card"]', { hasText: meetings[0].title }).first();
+    await expect(card.getByText(meetings[0].candidate)).toBeVisible();
+    await expect(card.getByText(meetings[0].position)).toBeVisible();
+    await expect(card.getByText(meetings[0].status)).toBeVisible();
+    await expect(card.getByText('onsite')).toBeVisible();
+  });
+
+  test('search combined with status filter', async ({ page }) => {
+    // Use the unique prefix to make sure only our seeded meetings match
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill(prefix);
+
+    // All three should be visible
+    for (const m of meetings) {
+      await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
+    }
+
+    // Now also filter by confirmed
+    await page.getByRole('combobox').first().click();
+    await page.getByRole('option', { name: /confirmed/i }).click();
+
+    // Only the confirmed meeting should remain
+    await expect(page.getByText(meetings[1].title)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(meetings[0].title)).not.toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(meetings[2].title)).not.toBeVisible({ timeout: 5000 });
+  });
+});

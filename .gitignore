@@ -42,5 +42,10 @@ backend/prisma/migrations/
 frontend/.next/
 frontend/out/
 
+# Test / Coverage
+backend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
 # Claude
 .claude/

@@ -51,9 +51,11 @@ app.use('/api/meetings', meetingRoutes);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
-  console.log(`[${new Date().toISOString()}] CORS allowed origins: ${allowedOrigins.join(', ')}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
+    console.log(`[${new Date().toISOString()}] CORS allowed origins: ${allowedOrigins.join(', ')}`);
+  });
+}
 
 export default app;

@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.0 - 2026-03-05
+
+### Added
+- Mocha + Chai unit/integration test suite (147 tests)
+- c8 code coverage (98.98% statements, 100% functions, 94.44% branches)
+- Test files covering validators, middleware, routes, and app integration
+- Test setup with console suppression and env config
+- npm scripts: `test`, `test:coverage`
+
+### Changed
+- Refactored `routes/auth.ts` to factory function `createAuthRoutes(prisma)` for testability
+- Refactored `routes/meetings.ts` to factory function `createMeetingRoutes(prisma)` for testability
+- Wrapped `app.listen()` in `require.main === module` guard to support supertest
+
+### Dev Dependencies Added
+- mocha, chai (v4), sinon, supertest, c8 with TypeScript type definitions
+
 ## v0.1.0 - 2026-03-05
 
 ### Added
