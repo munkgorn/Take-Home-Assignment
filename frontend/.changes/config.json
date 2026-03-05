@@ -1,6 +1,0 @@
-{
-  "project": "meeting-scheduler-frontend",
-  "kinds": ["added", "changed", "fixed", "removed", "security"],
-  "changeDir": ".changes",
-  "unreleasedDir": "unreleased"
-}
