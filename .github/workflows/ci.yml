@@ -57,7 +57,7 @@ jobs:
           echo "Services are ready"
 
       - name: Seed test data
-        run: docker compose exec -T backend npx prisma db seed
+        run: docker compose exec -T backend node prisma/seed.js
 
       - uses: actions/setup-node@v4
         with:
