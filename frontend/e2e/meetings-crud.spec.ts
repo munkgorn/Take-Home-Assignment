@@ -45,7 +45,8 @@ test.describe.serial('Meeting CRUD operations', () => {
     await page.waitForURL('/', { timeout: 15000 });
     await expect(page.getByText(/meeting created successfully/i)).toBeVisible({ timeout: 10000 });
 
-    // The meeting should appear in the dashboard list
+    // Search for the newly created meeting (pagination may hide it)
+    await page.getByPlaceholder('Search meetings...').fill(meetingTitle);
     await expect(page.getByText(meetingTitle)).toBeVisible({ timeout: 10000 });
   });
 
@@ -69,16 +70,19 @@ test.describe.serial('Meeting CRUD operations', () => {
     await page.getByRole('button', { name: /create meeting/i }).click();
     await page.waitForURL('/', { timeout: 15000 });
     await expect(page.getByText(/meeting created successfully/i)).toBeVisible({ timeout: 10000 });
+    // Search for the newly created meeting (pagination may hide it)
+    await page.getByPlaceholder('Search meetings...').fill(onsiteTitle);
     await expect(page.getByText(onsiteTitle)).toBeVisible({ timeout: 10000 });
   });
 
   test('view meeting detail page shows all fields', async ({ page }) => {
-    // Navigate to dashboard and click on the meeting card
+    // Navigate to dashboard and search for the meeting (avoid pagination)
     await page.goto('/');
+    await page.getByPlaceholder('Search meetings...').fill(meetingTitle);
     await expect(page.getByText(meetingTitle)).toBeVisible({ timeout: 10000 });
 
     // Click on the meeting card to navigate to the detail page
-    const card = page.locator('[class*="card"]', { hasText: meetingTitle }).first();
+    const card = page.locator('[data-slot="card"]', { hasText: meetingTitle }).first();
     await card.click();
 
     // Wait for navigation to the detail page
@@ -88,12 +92,12 @@ test.describe.serial('Meeting CRUD operations', () => {
     // Verify all meeting details are displayed
     await expect(page.getByText(meetingTitle)).toBeVisible();
     await expect(page.getByText(candidateName)).toBeVisible();
-    await expect(page.getByText(position)).toBeVisible();
-    await expect(page.getByText('online')).toBeVisible();
+    await expect(page.getByText(position, { exact: true })).toBeVisible();
+    await expect(page.getByText('online', { exact: true }).first()).toBeVisible();
     await expect(page.getByText(meetingLink)).toBeVisible();
     await expect(page.getByText(description)).toBeVisible();
     await expect(page.getByText(notes)).toBeVisible();
-    await expect(page.getByText('pending')).toBeVisible();
+    await expect(page.getByText('pending', { exact: true }).first()).toBeVisible();
 
     // Edit and Delete buttons should be present
     await expect(page.getByRole('link', { name: /edit/i })).toBeVisible();
@@ -104,9 +108,10 @@ test.describe.serial('Meeting CRUD operations', () => {
     // Navigate to the meeting detail page
     await page.goto(meetingDetailUrl || '/');
     if (!meetingDetailUrl) {
-      // Fallback: find the meeting from the dashboard
+      // Fallback: find the meeting from the dashboard via search
+      await page.getByPlaceholder('Search meetings...').fill(meetingTitle);
       await expect(page.getByText(meetingTitle)).toBeVisible({ timeout: 10000 });
-      const card = page.locator('[class*="card"]', { hasText: meetingTitle }).first();
+      const card = page.locator('[data-slot="card"]', { hasText: meetingTitle }).first();
       await card.click();
       await page.waitForURL(/\/meetings\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
     }
@@ -140,10 +145,11 @@ test.describe.serial('Meeting CRUD operations', () => {
 
   test('delete meeting via cancel keeps it in the list', async ({ page }) => {
     await page.goto('/');
+    await page.getByPlaceholder('Search meetings...').fill(updatedTitle);
     await expect(page.getByText(updatedTitle)).toBeVisible({ timeout: 10000 });
 
     // Open dropdown menu on the meeting card
-    const card = page.locator('[class*="card"]', { hasText: updatedTitle }).first();
+    const card = page.locator('[data-slot="card"]', { hasText: updatedTitle }).first();
     // The "..." menu trigger button
     const menuButton = card.getByRole('button').first();
     await menuButton.click({ force: true });
@@ -163,10 +169,11 @@ test.describe.serial('Meeting CRUD operations', () => {
 
   test('delete meeting via confirm removes it from the list', async ({ page }) => {
     await page.goto('/');
+    await page.getByPlaceholder('Search meetings...').fill(updatedTitle);
     await expect(page.getByText(updatedTitle)).toBeVisible({ timeout: 10000 });
 
     // Open dropdown menu on the meeting card
-    const card = page.locator('[class*="card"]', { hasText: updatedTitle }).first();
+    const card = page.locator('[data-slot="card"]', { hasText: updatedTitle }).first();
     const menuButton = card.getByRole('button').first();
     await menuButton.click({ force: true });
 
@@ -219,9 +226,10 @@ test.describe.serial('Meeting CRUD operations', () => {
     await page.getByRole('button', { name: /create meeting/i }).click();
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Navigate to its detail page
+    // Navigate to its detail page via search
+    await page.getByPlaceholder('Search meetings...').fill(deleteTitle);
     await expect(page.getByText(deleteTitle)).toBeVisible({ timeout: 10000 });
-    const card = page.locator('[class*="card"]', { hasText: deleteTitle }).first();
+    const card = page.locator('[data-slot="card"]', { hasText: deleteTitle }).first();
     await card.click();
     await page.waitForURL(/\/meetings\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
 

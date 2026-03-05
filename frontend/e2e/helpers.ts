@@ -106,8 +106,16 @@ export async function pickDate(page: Page, label: string, dayNumber: number) {
   const trigger = formItem.getByRole('button');
   await trigger.click();
 
-  // The calendar popover should now be visible. Click the target day number.
-  // Use getByRole('gridcell') to find the day button in the calendar.
-  const calendar = page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').last();
-  await calendar.getByRole('gridcell', { name: String(dayNumber), exact: true }).click();
+  // The calendar popover uses data-slot="popover-content" (Radix Popover).
+  // Day buttons are rendered inside <td> (gridcell) elements by react-day-picker.
+  const popover = page.locator('[data-slot="popover-content"]').last();
+  await popover.waitFor({ state: 'visible', timeout: 5000 });
+
+  // Click the day button matching the number.
+  // react-day-picker renders <td> with <button> inside. Use text matching.
+  // Exclude "outside" days (previous/next month) by filtering out td with data-outside.
+  await popover
+    .locator('td:not([data-outside]) > button', { hasText: new RegExp(`^${dayNumber}$`) })
+    .first()
+    .click();
 }

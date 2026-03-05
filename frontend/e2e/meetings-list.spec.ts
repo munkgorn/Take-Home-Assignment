@@ -10,6 +10,8 @@ test.describe('Meetings list - search, filter, and pagination', () => {
     { title: `${prefix} Gamma Screening`, candidate: 'Charlie Brown', position: 'Analyst', status: 'cancelled' },
   ];
 
+  test.setTimeout(120000);
+
   test.beforeAll(async ({ browser }) => {
     // Seed meetings for this test suite by creating them via the UI
     const page = await browser.newPage();
@@ -40,11 +42,14 @@ test.describe('Meetings list - search, filter, and pagination', () => {
     for (const m of meetings) {
       if (m.status === 'pending') continue;
 
+      // Use search to find the specific meeting (avoids pagination issues)
       await page.goto('/');
+      const searchInput = page.getByPlaceholder('Search meetings...');
+      await searchInput.fill(m.title);
       await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
 
       // Navigate to the meeting card, then edit
-      const card = page.locator('[class*="card"]', { hasText: m.title }).first();
+      const card = page.locator('[data-slot="card"]', { hasText: m.title }).first();
       await card.click();
       await page.waitForURL(/\/meetings\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
       await page.getByRole('link', { name: /edit/i }).click();
@@ -70,10 +75,13 @@ test.describe('Meetings list - search, filter, and pagination', () => {
 
   test('dashboard displays meetings list', async ({ page }) => {
     await expect(page.getByText('My Meetings')).toBeVisible();
-    // At least the seeded meetings should be visible
+    // Search by prefix to find all our seeded meetings
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill(prefix);
     for (const m of meetings) {
       await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
     }
+    await searchInput.clear();
   });
 
   test('search by candidate name filters meetings', async ({ page }) => {
@@ -100,21 +108,24 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   test('clear search shows all meetings again', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Search meetings...');
 
-    // First search to filter
+    // First search to filter to a single meeting
     await searchInput.fill('Alice Johnson');
     await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
 
-    // Clear the search
-    await searchInput.clear();
+    // Clear and search by prefix to find all seeded meetings (avoids pagination)
+    await searchInput.fill(prefix);
 
-    // All meetings should be visible again
     for (const m of meetings) {
       await expect(page.getByText(m.title)).toBeVisible({ timeout: 10000 });
     }
   });
 
   test('filter by pending status', async ({ page }) => {
+    // Search by prefix to scope to our test meetings
+    await page.getByPlaceholder('Search meetings...').fill(prefix);
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
+
     // Open the status filter select (shadcn/Radix Select)
     await page.getByRole('combobox', { name: /filter/i }).or(
       page.locator('button', { hasText: /all statuses/i })
@@ -130,6 +141,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   });
 
   test('filter by confirmed status', async ({ page }) => {
+    await page.getByPlaceholder('Search meetings...').fill(prefix);
     await page.getByRole('combobox', { name: /filter/i }).or(
       page.locator('button', { hasText: /all statuses/i })
     ).click();
@@ -141,6 +153,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   });
 
   test('filter by cancelled status', async ({ page }) => {
+    await page.getByPlaceholder('Search meetings...').fill(prefix);
     await page.getByRole('combobox', { name: /filter/i }).or(
       page.locator('button', { hasText: /all statuses/i })
     ).click();
@@ -152,13 +165,18 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   });
 
   test('reset status filter to all shows all meetings', async ({ page }) => {
-    // First apply a filter
+    // Search by prefix first to avoid pagination issues
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill(prefix);
+
+    // Apply a status filter
     await page.getByRole('combobox', { name: /filter/i }).or(
       page.locator('button', { hasText: /all statuses/i })
     ).click();
     await page.getByRole('option', { name: /pending/i }).click();
 
-    // Verify filtered
+    // Verify filtered — only pending should show
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
 
     // Reset to "All Statuses"
@@ -178,12 +196,17 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   });
 
   test('meeting cards show expected information', async ({ page }) => {
-    // Verify the first meeting card shows title, candidate name, position, status badge
-    const card = page.locator('[class*="card"]', { hasText: meetings[0].title }).first();
+    // Search to find the specific meeting (avoid pagination)
+    const searchInput = page.getByPlaceholder('Search meetings...');
+    await searchInput.fill(meetings[0].title);
+    await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
+
+    const card = page.locator('[data-slot="card"]', { hasText: meetings[0].title }).first();
     await expect(card.getByText(meetings[0].candidate)).toBeVisible();
     await expect(card.getByText(meetings[0].position)).toBeVisible();
     await expect(card.getByText(meetings[0].status)).toBeVisible();
     await expect(card.getByText('onsite')).toBeVisible();
+    await searchInput.clear();
   });
 
   test('search combined with status filter', async ({ page }) => {

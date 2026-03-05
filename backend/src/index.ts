@@ -5,6 +5,8 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';
 import meetingRoutes from './routes/meetings';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger, securityLogger } from './middleware/logger';
 
@@ -46,6 +48,7 @@ app.use(express.json({ limit: '1mb' }));
 // Log every request
 app.use(requestLogger);
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 

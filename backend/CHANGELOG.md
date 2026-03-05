@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0 - 2026-03-05
+
+### Added
+- Swagger UI API documentation at `/api-docs` (OpenAPI 3.0)
+- Full spec covering Auth and Meetings endpoints with request/response schemas
+- BearerAuth security scheme for protected endpoints
+- swagger-jsdoc, swagger-ui-express dependencies
+
 ## v0.2.0 - 2026-03-05
 
 ### Added

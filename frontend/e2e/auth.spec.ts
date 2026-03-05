@@ -15,7 +15,7 @@ test.describe('Authentication', () => {
 
   test('login page renders correctly', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
+    await expect(page.locator('[data-slot="card-title"]', { hasText: /sign in/i })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('Authentication', () => {
 
   test('register page renders correctly', async ({ page }) => {
     await page.goto('/register');
-    await expect(page.getByRole('heading', { name: /create account/i })).toBeVisible();
+    await expect(page.locator('[data-slot="card-title"]', { hasText: /create account/i })).toBeVisible();
     await expect(page.getByLabel('Name')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
