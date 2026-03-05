@@ -1,35 +1,32 @@
+import axios from "axios";
 import { getSession } from "next-auth/react";
 import { Meeting, PaginatedResponse } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
+  headers: { "Content-Type": "application/json" },
+});
 
-async function apiClient<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+api.interceptors.request.use(async (config) => {
   const session = await getSession();
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...options.headers,
-  };
-
   if (session?.accessToken) {
-    (headers as Record<string, string>)["Authorization"] =
-      `Bearer ${session.accessToken}`;
+    config.headers.Authorization = `Bearer ${session.accessToken}`;
   }
+  return config;
+});
 
-  const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-
-  if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "An error occurred" }));
-    throw new Error(error.message || "An error occurred");
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const message =
+      error.response?.data?.message || error.message || "An error occurred";
+    return Promise.reject(new Error(message));
   }
+);
 
-  if (res.status === 204) return {} as T;
-  return res.json();
-}
+export default api;
+
+// --- Meetings ---
 
 export async function getMeetings(params?: {
   page?: number;
@@ -37,54 +34,83 @@ export async function getMeetings(params?: {
   status?: string;
   search?: string;
 }) {
-  const searchParams = new URLSearchParams();
-  if (params?.page) searchParams.set("page", String(params.page));
-  if (params?.limit) searchParams.set("limit", String(params.limit));
-  if (params?.status) searchParams.set("status", params.status);
-  if (params?.search) searchParams.set("search", params.search);
-  const query = searchParams.toString();
-  return apiClient<PaginatedResponse<Meeting>>(
-    `/meetings${query ? `?${query}` : ""}`
-  );
+  const { data } = await api.get<PaginatedResponse<Meeting>>("/meetings", {
+    params,
+  });
+  return data;
+}
+
+export async function getMeetingsByRange(params: {
+  startDate: string;
+  endDate: string;
+  status?: string;
+}) {
+  const { data } = await api.get<PaginatedResponse<Meeting>>("/meetings", {
+    params,
+  });
+  return data;
+}
+
+export interface OverlapResult {
+  hasOverlap: boolean;
+  overlappingMeetings: {
+    id: string;
+    title: string;
+    candidateName: string;
+    startTime: string;
+    endTime: string;
+  }[];
+}
+
+export async function checkMeetingOverlap(params: {
+  start: string;
+  end: string;
+  excludeId?: string;
+}) {
+  const { data } = await api.get<OverlapResult>("/meetings/check-overlap", {
+    params,
+  });
+  return data;
 }
 
 export async function getMeeting(id: string) {
-  return apiClient<Meeting>(`/meetings/${id}`);
+  const { data } = await api.get<Meeting>(`/meetings/${id}`);
+  return data;
 }
 
-export async function createMeeting(data: Partial<Meeting>) {
-  return apiClient<Meeting>("/meetings", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export async function createMeeting(body: Partial<Meeting>) {
+  const { data } = await api.post<Meeting>("/meetings", body);
+  return data;
 }
 
-export async function updateMeeting(id: string, data: Partial<Meeting>) {
-  return apiClient<Meeting>(`/meetings/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+export async function updateMeeting(id: string, body: Partial<Meeting>) {
+  const { data } = await api.put<Meeting>(`/meetings/${id}`, body);
+  return data;
 }
 
 export async function deleteMeeting(id: string) {
-  return apiClient<void>(`/meetings/${id}`, { method: "DELETE" });
+  await api.delete(`/meetings/${id}`);
 }
 
-export async function register(data: {
+// --- Auth ---
+
+export async function changePassword(body: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  const { data } = await api.put<{ message: string }>(
+    "/auth/change-password",
+    body
+  );
+  return data;
+}
+
+export async function register(body: {
   email: string;
   password: string;
   name: string;
 }) {
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ message: "Registration failed" }));
-    throw new Error(error.message || "Registration failed");
-  }
-  return res.json();
+  const { data } = await api.post("/auth/register", body);
+  return data;
 }

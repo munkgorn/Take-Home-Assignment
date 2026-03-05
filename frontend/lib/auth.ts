@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,30 +19,30 @@ export const authOptions: NextAuthOptions = {
           process.env.NEXT_PUBLIC_API_URL ||
           "http://localhost:3001/api";
 
-        const res = await fetch(`${API_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
+        try {
+          const { data: user } = await axios.post(
+            `${API_URL}/auth/login`,
+            {
+              email: credentials.email,
+              password: credentials.password,
+            }
+          );
 
-        if (!res.ok) return null;
-        const user = await res.json();
+          const accessToken = jwt.sign(
+            { sub: String(user.id), email: user.email, name: user.name },
+            process.env.NEXTAUTH_SECRET!,
+            { expiresIn: "24h" }
+          );
 
-        const accessToken = jwt.sign(
-          { sub: String(user.id), email: user.email, name: user.name },
-          process.env.NEXTAUTH_SECRET!,
-          { expiresIn: "24h" }
-        );
-
-        return {
-          id: String(user.id),
-          email: user.email,
-          name: user.name,
-          accessToken,
-        };
+          return {
+            id: String(user.id),
+            email: user.email,
+            name: user.name,
+            accessToken,
+          };
+        } catch {
+          return null;
+        }
       },
     }),
   ],
