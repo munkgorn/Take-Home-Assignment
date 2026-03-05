@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0 - 2026-03-05
+
+### Added
+- Breadcrumb navigation component replacing Back buttons on all pages
+- Cancel button on meeting form
+
+### Changed
+- Date/Time UX simplified: 4 fields (Start Date + Start Time + End Date + End Time) → 3 fields (Date + Start Time + End Time)
+- Responsive improvements: mobile-friendly header, search input, card layout
+- Card menu button uses MoreHorizontal icon instead of text "..."
+- E2E tests updated: unique candidate names per run, role-based selectors for breadcrumbs
+
 ## v0.2.0 - 2026-03-05
 
 ### Added

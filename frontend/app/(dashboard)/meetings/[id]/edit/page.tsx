@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
 import { getMeeting, updateMeeting } from "@/lib/api";
 import { Meeting } from "@/types";
 import { MeetingForm } from "@/components/meeting-form";
-import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default function EditMeetingPage() {
   const params = useParams();
@@ -51,6 +50,7 @@ export default function EditMeetingPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <div className="h-4 w-48 animate-pulse rounded bg-muted" />
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
         <div className="mx-auto max-w-2xl space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -65,12 +65,13 @@ export default function EditMeetingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/meetings/${id}`}>Back</Link>
-        </Button>
-        <h2 className="text-3xl font-bold tracking-tight">Edit Meeting</h2>
-      </div>
+      <Breadcrumbs
+        items={[
+          { label: meeting.title, href: `/meetings/${id}` },
+          { label: "Edit" },
+        ]}
+      />
+      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Edit Meeting</h2>
       <div className="mx-auto max-w-2xl">
         <MeetingForm
           initialData={meeting}

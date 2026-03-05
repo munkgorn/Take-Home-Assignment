@@ -18,7 +18,7 @@ test.describe.serial('Meeting CRUD operations', () => {
 
   test('create an online meeting with all fields', async ({ page }) => {
     await page.goto('/meetings/new');
-    await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Schedule New Meeting' })).toBeVisible();
 
     // Fill basic text fields
     await fillMeetingBasicFields(page, {
@@ -34,9 +34,7 @@ test.describe.serial('Meeting CRUD operations', () => {
     });
 
     // Pick start date: pick day 15 of the current month
-    await pickDate(page, 'Start Date', 15);
-    // Pick end date: pick day 15 of the current month
-    await pickDate(page, 'End Date', 15);
+    await pickDate(page, 'Date', 15);
 
     // Submit the form
     await page.getByRole('button', { name: /create meeting/i }).click();
@@ -63,9 +61,8 @@ test.describe.serial('Meeting CRUD operations', () => {
       endTime: '15:00',
     });
 
-    // Pick dates
-    await pickDate(page, 'Start Date', 20);
-    await pickDate(page, 'End Date', 20);
+    // Pick date
+    await pickDate(page, 'Date', 20);
 
     await page.getByRole('button', { name: /create meeting/i }).click();
     await page.waitForURL('/', { timeout: 15000 });
@@ -76,8 +73,11 @@ test.describe.serial('Meeting CRUD operations', () => {
   });
 
   test('view meeting detail page shows all fields', async ({ page }) => {
-    // Navigate to dashboard and search for the meeting (avoid pagination)
+    // Navigate to dashboard and wait for initial load before searching
     await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'My Meetings' })).toBeVisible();
+    // Wait for initial data load to finish (cards or empty state)
+    await expect(page.locator('[data-slot="card"]').first().or(page.getByText('No meetings found'))).toBeVisible({ timeout: 10000 });
     await page.getByPlaceholder('Search meetings...').fill(meetingTitle);
     await expect(page.getByText(meetingTitle)).toBeVisible({ timeout: 10000 });
 
@@ -90,7 +90,7 @@ test.describe.serial('Meeting CRUD operations', () => {
     meetingDetailUrl = page.url();
 
     // Verify all meeting details are displayed
-    await expect(page.getByText(meetingTitle)).toBeVisible();
+    await expect(page.getByRole('heading', { name: meetingTitle })).toBeVisible();
     await expect(page.getByText(candidateName)).toBeVisible();
     await expect(page.getByText(position, { exact: true })).toBeVisible();
     await expect(page.getByText('online', { exact: true }).first()).toBeVisible();
@@ -139,12 +139,13 @@ test.describe.serial('Meeting CRUD operations', () => {
     await expect(page.getByText(/meeting updated successfully/i)).toBeVisible({ timeout: 10000 });
 
     // Verify updated values on detail page
-    await expect(page.getByText(updatedTitle)).toBeVisible();
+    await expect(page.getByRole('heading', { name: updatedTitle })).toBeVisible();
     await expect(page.getByText('confirmed')).toBeVisible();
   });
 
   test('delete meeting via cancel keeps it in the list', async ({ page }) => {
     await page.goto('/');
+    await expect(page.locator('[data-slot="card"]').first().or(page.getByText('No meetings found'))).toBeVisible({ timeout: 10000 });
     await page.getByPlaceholder('Search meetings...').fill(updatedTitle);
     await expect(page.getByText(updatedTitle)).toBeVisible({ timeout: 10000 });
 
@@ -169,6 +170,7 @@ test.describe.serial('Meeting CRUD operations', () => {
 
   test('delete meeting via confirm removes it from the list', async ({ page }) => {
     await page.goto('/');
+    await expect(page.locator('[data-slot="card"]').first().or(page.getByText('No meetings found'))).toBeVisible({ timeout: 10000 });
     await page.getByPlaceholder('Search meetings...').fill(updatedTitle);
     await expect(page.getByText(updatedTitle)).toBeVisible({ timeout: 10000 });
 
@@ -195,7 +197,7 @@ test.describe.serial('Meeting CRUD operations', () => {
 
   test('create meeting form validation prevents empty submission', async ({ page }) => {
     await page.goto('/meetings/new');
-    await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Schedule New Meeting' })).toBeVisible();
 
     // Click Create Meeting without filling anything
     await page.getByRole('button', { name: /create meeting/i }).click();
@@ -221,12 +223,12 @@ test.describe.serial('Meeting CRUD operations', () => {
       startTime: '09:00',
       endTime: '10:00',
     });
-    await pickDate(page, 'Start Date', 18);
-    await pickDate(page, 'End Date', 18);
+    await pickDate(page, 'Date', 18);
     await page.getByRole('button', { name: /create meeting/i }).click();
     await page.waitForURL('/', { timeout: 15000 });
 
-    // Navigate to its detail page via search
+    // Navigate to its detail page via search (wait for initial load first)
+    await expect(page.locator('[data-slot="card"]').first().or(page.getByText('No meetings found'))).toBeVisible({ timeout: 10000 });
     await page.getByPlaceholder('Search meetings...').fill(deleteTitle);
     await expect(page.getByText(deleteTitle)).toBeVisible({ timeout: 10000 });
     const card = page.locator('[data-slot="card"]', { hasText: deleteTitle }).first();

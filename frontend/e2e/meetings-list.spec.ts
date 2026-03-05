@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test';
 import { login, fillMeetingBasicFields, pickDate } from './helpers';
 
 test.describe('Meetings list - search, filter, and pagination', () => {
-  // Seed data identifiers
+  // Seed data identifiers — use unique suffix to avoid pollution from previous runs
   const prefix = `List${Date.now()}`;
+  const suffix = Date.now().toString().slice(-6);
   const meetings = [
-    { title: `${prefix} Alpha Interview`, candidate: 'Alice Johnson', position: 'Designer', status: 'pending' },
-    { title: `${prefix} Beta Review`, candidate: 'Bob Williams', position: 'Developer', status: 'confirmed' },
-    { title: `${prefix} Gamma Screening`, candidate: 'Charlie Brown', position: 'Analyst', status: 'cancelled' },
+    { title: `${prefix} Alpha Interview`, candidate: `Alice Johnson ${suffix}`, position: 'Designer', status: 'pending' },
+    { title: `${prefix} Beta Review`, candidate: `Bob Williams ${suffix}`, position: 'Developer', status: 'confirmed' },
+    { title: `${prefix} Gamma Screening`, candidate: `Charlie Brown ${suffix}`, position: 'Analyst', status: 'cancelled' },
   ];
 
   test.setTimeout(120000);
@@ -19,7 +20,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
 
     for (const m of meetings) {
       await page.goto('/meetings/new');
-      await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Schedule New Meeting' })).toBeVisible();
 
       await fillMeetingBasicFields(page, {
         title: m.title,
@@ -30,8 +31,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
         endTime: '11:00',
       });
 
-      await pickDate(page, 'Start Date', 15);
-      await pickDate(page, 'End Date', 15);
+      await pickDate(page, 'Date', 15);
 
       await page.getByRole('button', { name: /create meeting/i }).click();
       await page.waitForURL('/', { timeout: 15000 });
@@ -86,7 +86,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
 
   test('search by candidate name filters meetings', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Search meetings...');
-    await searchInput.fill('Alice Johnson');
+    await searchInput.fill(meetings[0].candidate);
 
     // Wait for the filtered results to load
     await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
@@ -98,7 +98,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
 
   test('search by title filters meetings', async ({ page }) => {
     const searchInput = page.getByPlaceholder('Search meetings...');
-    await searchInput.fill('Beta Review');
+    await searchInput.fill(meetings[1].title);
 
     await expect(page.getByText(meetings[1].title)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(meetings[0].title)).not.toBeVisible({ timeout: 5000 });
@@ -109,7 +109,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
     const searchInput = page.getByPlaceholder('Search meetings...');
 
     // First search to filter to a single meeting
-    await searchInput.fill('Alice Johnson');
+    await searchInput.fill(meetings[0].candidate);
     await expect(page.getByText(meetings[0].title)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(meetings[1].title)).not.toBeVisible({ timeout: 5000 });
 
@@ -192,7 +192,7 @@ test.describe('Meetings list - search, filter, and pagination', () => {
   test('new meeting button navigates to create page', async ({ page }) => {
     await page.getByRole('link', { name: /new meeting/i }).click();
     await expect(page).toHaveURL(/\/meetings\/new/);
-    await expect(page.getByText('Schedule New Meeting')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Schedule New Meeting' })).toBeVisible();
   });
 
   test('meeting cards show expected information', async ({ page }) => {

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { getMeetings, deleteMeeting } from "@/lib/api";
 import { Meeting, PaginatedResponse } from "@/types";
@@ -97,7 +98,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">My Meetings</h2>
         <Button asChild>
           <Link href="/meetings/new">New Meeting</Link>
@@ -109,7 +110,7 @@ export default function DashboardPage() {
           placeholder="Search meetings..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="sm:max-w-xs"
+          className="w-full sm:max-w-xs"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="sm:w-[180px]">
@@ -169,8 +170,9 @@ export default function DashboardPage() {
                         asChild
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          ...
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

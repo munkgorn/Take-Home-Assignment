@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
 import { createMeeting } from "@/lib/api";
 import { Meeting } from "@/types";
 import { MeetingForm } from "@/components/meeting-form";
-import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 export default function NewMeetingPage() {
   const router = useRouter();
@@ -30,14 +29,10 @@ export default function NewMeetingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/">Back</Link>
-        </Button>
-        <h2 className="text-3xl font-bold tracking-tight">
-          Schedule New Meeting
-        </h2>
-      </div>
+      <Breadcrumbs items={[{ label: "Schedule New Meeting" }]} />
+      <h2 className="text-3xl font-bold tracking-tight">
+        Schedule New Meeting
+      </h2>
       <div className="mx-auto max-w-2xl">
         <MeetingForm onSubmit={onSubmit} isLoading={isLoading} />
       </div>

@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 const statusColors: Record<string, string> = {
   pending:
@@ -72,7 +73,8 @@ export default function MeetingDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+        <div className="h-8 w-64 animate-pulse rounded bg-muted" />
         <Card className="animate-pulse">
           <CardHeader>
             <div className="h-6 w-3/4 rounded bg-muted" />
@@ -91,16 +93,12 @@ export default function MeetingDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/">Back</Link>
-        </Button>
-        <h2 className="text-3xl font-bold tracking-tight">{meeting.title}</h2>
-      </div>
+      <Breadcrumbs items={[{ label: meeting.title }]} />
+      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{meeting.title}</h2>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle>Meeting Details</CardTitle>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>
@@ -132,7 +130,7 @@ export default function MeetingDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Badge
               variant="secondary"
               className={statusColors[meeting.status]}
@@ -144,7 +142,7 @@ export default function MeetingDetailPage() {
 
           <Separator />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
                 Candidate
@@ -182,7 +180,7 @@ export default function MeetingDetailPage() {
                   href={meeting.meetingLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary underline"
+                  className="text-primary underline break-all"
                 >
                   {meeting.meetingLink}
                 </a>

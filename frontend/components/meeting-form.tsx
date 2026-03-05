@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,9 +40,8 @@ const meetingSchema = z
     position: z.string().min(1, "Position is required"),
     meetingType: z.enum(["onsite", "online"]),
     meetingLink: z.string().optional(),
-    startDate: z.date({ error: "Start date is required" }),
+    date: z.date({ error: "Date is required" }),
     startTime: z.string().min(1, "Start time is required"),
-    endDate: z.date({ error: "End date is required" }),
     endTime: z.string().min(1, "End time is required"),
     status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
     description: z.string().optional(),
@@ -72,6 +73,7 @@ export function MeetingForm({
   onSubmit,
   isLoading,
 }: MeetingFormProps) {
+  const router = useRouter();
   const isEdit = !!initialData;
 
   const form = useForm<MeetingFormValues>({
@@ -82,15 +84,12 @@ export function MeetingForm({
       position: initialData?.position || "",
       meetingType: initialData?.meetingType || "onsite",
       meetingLink: initialData?.meetingLink || "",
-      startDate: initialData?.startTime
+      date: initialData?.startTime
         ? new Date(initialData.startTime)
         : undefined,
       startTime: initialData?.startTime
         ? format(new Date(initialData.startTime), "HH:mm")
         : "",
-      endDate: initialData?.endTime
-        ? new Date(initialData.endTime)
-        : undefined,
       endTime: initialData?.endTime
         ? format(new Date(initialData.endTime), "HH:mm")
         : "",
@@ -106,10 +105,10 @@ export function MeetingForm({
     const [startHours, startMinutes] = values.startTime.split(":").map(Number);
     const [endHours, endMinutes] = values.endTime.split(":").map(Number);
 
-    const startDateTime = new Date(values.startDate);
+    const startDateTime = new Date(values.date);
     startDateTime.setHours(startHours, startMinutes, 0, 0);
 
-    const endDateTime = new Date(values.endDate);
+    const endDateTime = new Date(values.date);
     endDateTime.setHours(endHours, endMinutes, 0, 0);
 
     await onSubmit({
@@ -216,107 +215,70 @@ export function MeetingForm({
           )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Start Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value
-                            ? format(field.value, "PPP")
-                            : "Pick a date"}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="startTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Time</FormLabel>
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
                   <FormControl>
-                    <Input type="time" {...field} />
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value
+                        ? format(field.value, "PPP")
+                        : "Pick a date"}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>End Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value
-                            ? format(field.value, "PPP")
-                            : "Pick a date"}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="endTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="startTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {isEdit && (
@@ -392,6 +354,13 @@ export function MeetingForm({
               : isEdit
                 ? "Update Meeting"
                 : "Create Meeting"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+          >
+            Cancel
           </Button>
         </div>
       </form>

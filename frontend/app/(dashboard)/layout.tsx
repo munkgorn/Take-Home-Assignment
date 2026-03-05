@@ -16,11 +16,11 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <h1 className="text-xl font-semibold">Meeting Scheduler</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden sm:inline text-sm text-muted-foreground truncate max-w-[200px]">
               {session?.user?.name || session?.user?.email}
             </span>
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="hidden sm:block h-6" />
             <Button
               variant="ghost"
               size="sm"
