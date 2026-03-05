@@ -1,3 +1,4 @@
-kind: changed
+project: frontend
+kind: Changed
 body: Replace fetch with axios instance for all API calls (request/response interceptors for auth and error handling)
 time: 2026-03-05T15:30:05.000Z
