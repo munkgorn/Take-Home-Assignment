@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0 - 2026-03-05
+
+### Added
+- Use Case diagram with 13 use cases across Authentication, Meeting Management, and Meeting Types
+- Database ER diagram showing User-Meeting one-to-many relationship with full column details
+- Documentation in `docs/` directory (Mermaid-based, renders on GitHub)
+
 ## v0.3.0 - 2026-03-05
 
 ### Added
