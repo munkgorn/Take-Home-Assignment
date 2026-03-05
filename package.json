@@ -6,7 +6,6 @@
     "changelog:new:frontend": "changie new -j frontend",
     "changelog:batch:backend": "changie batch auto --project backend",
     "changelog:batch:frontend": "changie batch auto --project frontend",
-    "changelog:merge:backend": "changie merge --project backend",
-    "changelog:merge:frontend": "changie merge --project frontend"
+    "changelog:merge": "changie merge"
   }
 }
