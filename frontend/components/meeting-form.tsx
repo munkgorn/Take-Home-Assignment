@@ -5,10 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { CalendarIcon, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { checkMeetingOverlap, type OverlapResult } from "@/lib/api";
 import {
   Form,
   FormControl,
@@ -100,6 +102,49 @@ export function MeetingForm({
   });
 
   const meetingType = form.watch("meetingType");
+  const watchDate = form.watch("date");
+  const watchStartTime = form.watch("startTime");
+  const watchEndTime = form.watch("endTime");
+
+  const [overlapResult, setOverlapResult] = useState<OverlapResult | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const checkOverlap = useCallback(async () => {
+    if (!watchDate || !watchStartTime || !watchEndTime) {
+      setOverlapResult(null);
+      return;
+    }
+
+    const [startH, startM] = watchStartTime.split(":").map(Number);
+    const [endH, endM] = watchEndTime.split(":").map(Number);
+
+    const startDt = new Date(watchDate);
+    startDt.setHours(startH, startM, 0, 0);
+    const endDt = new Date(watchDate);
+    endDt.setHours(endH, endM, 0, 0);
+
+    if (endDt <= startDt) {
+      setOverlapResult(null);
+      return;
+    }
+
+    try {
+      const result = await checkMeetingOverlap({
+        start: startDt.toISOString(),
+        end: endDt.toISOString(),
+        excludeId: initialData?.id,
+      });
+      setOverlapResult(result);
+    } catch {
+      // Silently ignore overlap check failures
+    }
+  }, [watchDate, watchStartTime, watchEndTime, initialData?.id]);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(checkOverlap, 500);
+    return () => clearTimeout(debounceRef.current);
+  }, [checkOverlap]);
 
   async function handleSubmit(values: MeetingFormValues) {
     const [startHours, startMinutes] = values.startTime.split(":").map(Number);
@@ -280,6 +325,31 @@ export function MeetingForm({
             )}
           />
         </div>
+
+        {overlapResult?.hasOverlap && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Time conflict detected
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  This meeting overlaps with:
+                </p>
+                <ul className="list-disc pl-5 text-sm text-amber-700 dark:text-amber-300">
+                  {overlapResult.overlappingMeetings.map((m) => (
+                    <li key={m.id}>
+                      <strong>{m.title}</strong> ({m.candidateName}) —{" "}
+                      {format(new Date(m.startTime), "h:mm a")} to{" "}
+                      {format(new Date(m.endTime), "h:mm a")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isEdit && (
           <FormField

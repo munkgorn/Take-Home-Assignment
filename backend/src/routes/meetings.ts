@@ -10,10 +10,10 @@ export function createMeetingRoutes(prisma: PrismaClient) {
 
   router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const page = Math.max(1, parseInt(req.query.page as string) || 1);
-      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
       const status = req.query.status as string | undefined;
       const search = req.query.search as string | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
 
       const where: Prisma.MeetingWhereInput = {
         userId: req.user!.id,
@@ -31,6 +31,29 @@ export function createMeetingRoutes(prisma: PrismaClient) {
         ];
       }
 
+      // Date range filter for calendar view
+      if (startDate && endDate) {
+        where.startTime = { lt: new Date(endDate) };
+        where.endTime = { gt: new Date(startDate) };
+
+        const meetings = await prisma.meeting.findMany({
+          where,
+          orderBy: { startTime: 'asc' },
+        });
+
+        res.json({
+          meetings,
+          total: meetings.length,
+          page: 1,
+          limit: meetings.length,
+          totalPages: 1,
+        });
+        return;
+      }
+
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
+
       const [meetings, total] = await Promise.all([
         prisma.meeting.findMany({
           where,
@@ -47,6 +70,50 @@ export function createMeetingRoutes(prisma: PrismaClient) {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/check-overlap', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const start = req.query.start as string;
+      const end = req.query.end as string;
+      const excludeId = req.query.excludeId as string | undefined;
+
+      if (!start || !end) {
+        res.status(400).json({ error: 'start and end are required' });
+        return;
+      }
+
+      const where: Prisma.MeetingWhereInput = {
+        userId: req.user!.id,
+        deletedAt: null,
+        status: { not: 'cancelled' },
+        startTime: { lt: new Date(end) },
+        endTime: { gt: new Date(start) },
+      };
+
+      if (excludeId) {
+        where.id = { not: excludeId };
+      }
+
+      const overlappingMeetings = await prisma.meeting.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          candidateName: true,
+          startTime: true,
+          endTime: true,
+        },
+        orderBy: { startTime: 'asc' },
+      });
+
+      res.json({
+        hasOverlap: overlappingMeetings.length > 0,
+        overlappingMeetings,
       });
     } catch (err) {
       next(err);

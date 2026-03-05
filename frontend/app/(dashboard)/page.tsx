@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { MoreHorizontal } from "lucide-react";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { MoreHorizontal, LayoutGrid, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
-import { getMeetings, deleteMeeting } from "@/lib/api";
+import { getMeetings, getMeetingsByRange, deleteMeeting } from "@/lib/api";
 import { Meeting, PaginatedResponse } from "@/types";
+import { CalendarView } from "@/components/calendar-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,12 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "calendar">("cards");
+  const [calendarMeetings, setCalendarMeetings] = useState<Meeting[]>([]);
+  const [calendarRange, setCalendarRange] = useState<{ start: Date; end: Date }>({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+  });
 
   const fetchMeetings = useCallback(async () => {
     setIsLoading(true);
@@ -76,9 +83,29 @@ export default function DashboardPage() {
     }
   }, [page, statusFilter, search]);
 
+  const fetchCalendarMeetings = useCallback(async () => {
+    try {
+      // Fetch a wider range (prev month to next month) to cover edge events
+      const rangeStart = subMonths(calendarRange.start, 1);
+      const rangeEnd = addMonths(calendarRange.end, 1);
+      const result = await getMeetingsByRange({
+        startDate: rangeStart.toISOString(),
+        endDate: rangeEnd.toISOString(),
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      });
+      setCalendarMeetings(result.meetings);
+    } catch {
+      toast.error("Failed to load calendar meetings");
+    }
+  }, [calendarRange, statusFilter]);
+
   useEffect(() => {
-    fetchMeetings();
-  }, [fetchMeetings]);
+    if (viewMode === "cards") {
+      fetchMeetings();
+    } else {
+      fetchCalendarMeetings();
+    }
+  }, [viewMode, fetchMeetings, fetchCalendarMeetings]);
 
   useEffect(() => {
     setPage(1);
@@ -100,18 +127,42 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">My Meetings</h2>
-        <Button asChild>
-          <Link href="/meetings/new">New Meeting</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border">
+            <Button
+              variant={viewMode === "cards" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9 rounded-r-none"
+              onClick={() => setViewMode("cards")}
+              title="Card view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "calendar" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9 rounded-l-none"
+              onClick={() => setViewMode("calendar")}
+              title="Calendar view"
+            >
+              <CalendarDays className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button asChild>
+            <Link href="/meetings/new">New Meeting</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Input
-          placeholder="Search meetings..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:max-w-xs"
-        />
+        {viewMode === "cards" && (
+          <Input
+            placeholder="Search meetings..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:max-w-xs"
+          />
+        )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="sm:w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -125,7 +176,12 @@ export default function DashboardPage() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {viewMode === "calendar" ? (
+        <CalendarView
+          meetings={calendarMeetings}
+          onRangeChange={(range) => setCalendarRange(range)}
+        />
+      ) : isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
