@@ -1,0 +1,37 @@
+"use client";
+
+import { useSession, signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { data: session } = useSession();
+
+  return (
+    <div className="min-h-screen bg-muted/40">
+      <header className="sticky top-0 z-50 border-b bg-background">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <h1 className="text-xl font-semibold">Meeting Scheduler</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {session?.user?.name || session?.user?.email}
+            </span>
+            <Separator orientation="vertical" className="h-6" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    </div>
+  );
+}

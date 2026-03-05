@@ -1,0 +1,3 @@
+kind: security
+body: Security event logging (login success/fail, token issues, CORS blocks)
+time: 2026-03-05T12:50:01.000Z

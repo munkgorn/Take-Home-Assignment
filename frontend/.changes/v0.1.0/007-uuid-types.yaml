@@ -1,0 +1,3 @@
+kind: changed
+body: All ID types changed from number to string (UUID)
+time: 2026-03-05T12:55:00.000Z

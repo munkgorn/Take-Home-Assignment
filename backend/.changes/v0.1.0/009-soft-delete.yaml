@@ -1,0 +1,3 @@
+kind: changed
+body: Meeting deletion is now soft delete (sets deletedAt timestamp instead of removing row)
+time: 2026-03-05T12:55:01.000Z

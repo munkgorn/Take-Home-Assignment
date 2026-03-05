@@ -1,0 +1,12 @@
+{
+  "name": "meeting-scheduler",
+  "private": true,
+  "scripts": {
+    "changelog:new:backend": "node scripts/changelog.mjs new backend",
+    "changelog:new:frontend": "node scripts/changelog.mjs new frontend",
+    "changelog:list:backend": "node scripts/changelog.mjs list backend",
+    "changelog:list:frontend": "node scripts/changelog.mjs list frontend",
+    "changelog:batch:backend": "node scripts/changelog.mjs batch backend",
+    "changelog:batch:frontend": "node scripts/changelog.mjs batch frontend"
+  }
+}

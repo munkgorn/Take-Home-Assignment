@@ -1,0 +1,3 @@
+kind: security
+body: CORS whitelist with ALLOWED_ORIGINS, security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+time: 2026-03-05T12:50:02.000Z
